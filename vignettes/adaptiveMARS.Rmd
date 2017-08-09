@@ -33,10 +33,17 @@ larger variances:
   
 Mathematically this can be expressed as:
 \[
-Z \sim MVNorm((0,0,0)^T, 
+\begin{align}
+Z & \sim & MVN\left(\left(\begin{array}{c}0 \\ 0 \\ 0\end{array}\right), 
               \left(\begin{array}{ccc}1 & 0.3 & 0.3 \\
+                     0.3 & 1 & 0.3 \\
+                     0.3 & 0.3 & 1 \end{array} \right) \right)\\
+X & \sim & N(Z_1 + Z_1^2 + Z_2, \sigma^2_{ex}) \\
+x & = & \mbox{Scaled, centred X} \\
+y & \sim & N(Z_1 + Z_2 + Z_3 + x, \sigma^2_e)
+\end{align}
 \]
-  
+
 Pairwise plots:
 
 ```{r fig.width=6, fig.height=6}
@@ -72,3 +79,5 @@ Here's the interesting linear model:
 library(xtable); options(xtable.type = "html")
 xtable(lm(yResids ~ xResids - 1))
 ```
+
+What happens if x = z1^2?
