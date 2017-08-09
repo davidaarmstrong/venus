@@ -1,0 +1,6 @@
+exportPattern("^[[:alpha:]]+")
+import("earth")
+importFrom("graphics", "plot", "par")
+importFrom("stats", "lm", "model.matrix", "residuals", "terms")
+S3method("print", "venus")
+S3method("plot", "venus")

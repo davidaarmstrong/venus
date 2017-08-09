@@ -1,0 +1,15 @@
+Package: venus
+Type: Package
+Title: Apply Earth Model to Nuisance Variables
+Version: 0.1.1
+Author: Duncan Murdoch and David Armstrong
+Maintainer: Duncan Murdoch <murdoch.duncan@gmail.com>
+Description: To detect the effect of a particular variable,
+  use the multivariate adaptive regression splines from package
+  earth to handle nuisance variables.
+Imports: earth
+Suggests: MASS, knitr
+License: GPL-2
+Encoding: UTF-8
+LazyData: true
+VignetteBuilder: knitr

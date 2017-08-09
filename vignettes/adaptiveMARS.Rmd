@@ -1,0 +1,74 @@
+---
+title: "Adaptive MARS"
+author: "Duncan Murdoch and David Armstrong"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Adaptive MARS}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+Our example in `help(venus)` has this setup, but with
+larger variances:
+
+```{r}
+  set.seed(12345)
+  library(MASS)
+  sigma2.e.x <- 4.7*3*0.01
+  sigma2.e <- 7.3/2*0.01
+  ## Z are the control variables or nuisance variables
+  Z <- mvrnorm(1000, c(0,0,0),
+             matrix(c(1,.3,.3,.3,1,.3,.3,.3,1), ncol=3),
+             empirical=TRUE)
+  ## X is the variable of interest that has a non-linear relationship to
+  ## one of the elements in Z 
+  X <- Z[,1] + Z[,1]^2 + Z[,2] + rnorm(1000, 0, sqrt(sigma2.e.x))
+
+  df <- data.frame(z1 = Z[,1], z2=Z[,2], z3 = Z[,3], x=scale(X))
+  ## make y a linear function of x and the z variables,
+  ## so the theoretical coefficient on x is 1
+  df$y <- with(df, z1 + z2 + z3 + x) + rnorm(1000, 0, sqrt(sigma2.e))
+  ```
+  
+Mathematically this can be expressed as:
+\[
+Z \sim MVNorm((0,0,0)^T, 
+              \left(\begin{array}{ccc}1 & 0.3 & 0.3 \\
+\]
+  
+Pairwise plots:
+
+```{r fig.width=6, fig.height=6}
+  pairs(df)
+```
+
+We partial out the nuisance variables using `venus(y ~ x, nuisance = y ~ .-x, data = df)`.  These are the steps
+of that calculation:
+
+First, fit the nuisance model:
+```{r}
+library(earth)
+nuisanceFit <- earth(y ~ .-x, data = df)
+yResids <- residuals(nuisanceFit)
+```
+
+Now extract the predictors that were chosen, and get residuals
+on X:
+```{r}
+nuisanceModelmatrix <- model.matrix(nuisanceFit)
+xResids <- residuals(lm(x ~ nuisanceModelmatrix, data = df))
+```
+
+and plot again:
+
+```{r}
+plot(yResids ~ xResids)
+```
+
+Here's the interesting linear model:
+
+```{r results='asis'}
+library(xtable); options(xtable.type = "html")
+xtable(lm(yResids ~ xResids - 1))
+```
