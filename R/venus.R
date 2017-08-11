@@ -9,10 +9,20 @@ venus <- function(formula, nuisance = NULL, data = NULL,
               is.character(method),
               length(method) == 2)
 
-    # method <- match.arg(method, several.ok = TRUE)
+    method <- match.arg(method, several.ok = TRUE)
 
     # Do the fit of the nuisance parameters
-    nuisanceFit <- do.call(method[1], c(list(formula = nuisance, data = data), nuisanceArgs))
+    nuisanceCall <- quote(earth(formula = nuisance, data = data))
+    if (method[1] == "lm")
+      nuisanceCall[[1]] <- as.name("lm")
+    nm <- names(nuisanceArgs)
+    for (i in seq_along(nuisanceArgs)) {
+      if (!is.null(nm) && !is.na(nm[i]) && nchar(nm[i]))
+        nuisanceCall[[nm[i]]] <- nuisanceArgs[[i]]
+      else
+        nuisanceCall <- c(nuisanceCall, pairlist(nuisanceArgs[[i]]))
+    }
+    nuisanceFit <- eval(nuisanceCall)
     yResids <- residuals(nuisanceFit)
     nuisanceModelmatrix <- model.matrix(nuisanceFit)
     nuisanceIntercept <- attr(terms(nuisance, data = data), "intercept") > 0
@@ -23,7 +33,8 @@ venus <- function(formula, nuisance = NULL, data = NULL,
     if (nuisanceIntercept && mainIntercept)
       mainModelmatrix <- mainModelmatrix[, -1, drop = FALSE]
 
-    mainModelmatrix <- residuals(lm(mainModelmatrix ~ nuisanceModelmatrix))
+    predictorFit <- lm(mainModelmatrix ~ nuisanceModelmatrix)
+    mainModelmatrix <- residuals(predictorFit)
 
     # Now fit the residuals of y to the residuals of the predictors
     if (method[2] == "lm")
@@ -31,20 +42,116 @@ venus <- function(formula, nuisance = NULL, data = NULL,
     else
       mainFormula <- yResids ~ mainModelmatrix
     mainFit <- do.call(method[2], c(mainFormula, mainArgs))
-    structure(list(mainFit = mainFit, nuisanceFit = nuisanceFit), class = "venus")
+    structure(list(mainFit = mainFit, nuisanceFit = nuisanceFit, predictorFit = predictorFit), class = "venus")
   }
 }
 
-print.venus <- function(x, ...) {
-  cat("The nuisance fit:\n")
-  print(x$nuisanceFit, ...)
-  cat("\nThe main fit:\n")
-  print(x$mainFit, ...)
+print.venus <- function(x, types = c("nuisance", "main"), ...) {
+  types <- match.arg(types, choices = c("nuisance", "predictor", "main"), several.ok = TRUE)
+  for (i in seq_along(types)) {
+    type <- types[i]
+    if (i > 1)
+      cat("\n")
+    if (type == "nuisance") {
+      cat("The nuisance fit:\n")
+      print(x$nuisanceFit, ...)
+    }
+    if (type == "predictor") {
+      cat("The predictor fit:\n")
+      print(x$predictorFit, ...)
+    }
+    if (type == "main") {
+      cat("The main fit:\n")
+      print(x$mainFit, ...)
+    }
+  }
 }
 
-plot.venus <- function(x, ...) {
-  plot(x$nuisanceFit, ...)
-  par(mfrow=c(2,2), oma = c(0,0,2,0))
-  plot(x$mainFit, ...)
+plot.venus <- function(x, types = c("nuisance", "main"), ...) {
+  types <- match.arg(types, choices = c("nuisance", "predictor", "main"), several.ok = TRUE)
+  for (type in types) {
+    if (type == "nuisance") 
+      plot(x$nuisanceFit, ...)
+    else if (type == "main") 
+      plot(x$mainFit, ...)
+    else if (type == "predictor")
+      plot(x$predictorFit)
+  }
 }
 
+summary.venus <- function(object, ...) 
+  structure(list(nuisanceSummary = summary(object$nuisanceFit, ...),
+      mainSummary = summary(object$mainFit, ...),
+      predictorSummary = summary(object$predictorFit, ...)),
+      class = "summary.venus")
+
+print.summary.venus <- function(x, types = c("nuisance", "main"), ...) {
+  types <- match.arg(types, choices = c("nuisance", "predictor", "main"), several.ok = TRUE)
+  for (i in seq_along(types)) {
+    type <- types[i]
+    if (i > 1)
+      cat("\n")
+    if (type == "nuisance") {
+      cat("Nuisance summary:\n")
+      print(x$nuisanceSummary, ...)
+    }
+    if (type == "predictor") {
+      cat("Predictor summary:\n")
+      print(x$predictorSummary, ...)
+    }
+    if (type == "main") {
+      cat("Main summary:\n")
+      print(x$mainSummary, ...)
+    }
+  }
+}
+
+residuals.venus <- function(object, type = "main", ...) {
+  type <- match.arg(type, choices = c("nuisance", "predictor", "main"))
+  if (type == "main")
+    residuals(object$mainFit, ...)
+  else if (type == "nuisance")
+    residuals(object$nuisanceFit, ...)
+  else if (type == "predictor")
+    residuals(object$predictorFit, ...)
+}
+ 
+coef.venus <- function(object, type = "main", ...) {
+  type <- match.arg(type, choices = c("nuisance", "predictor", "main"))
+  if (type == "main")
+    coef(object$mainFit, ...)
+  else if (type == "nuisance")
+    coef(object$nuisanceFit, ...)
+  else if (type == "predictor")
+    coef(object$predictorFit, ...)
+}
+
+effects.venus <- function(object, type = "main", ...) {
+  type <- match.arg(type, choices = c("nuisance", "predictor", "main"))
+  if (type == "main")
+    effects(object$mainFit, ...)
+  else if (type == "nuisance")
+    effects(object$nuisanceFit, ...)
+  else if (type == "predictor")
+    effects(object$predictorFit, ...)
+}
+
+fitted.venus <- function(object, type = "main", ...) {
+  type <- match.arg(type, choices = c("nuisance", "predictor", "main"))
+  if (type == "main")
+    fitted(object$mainFit, ...)
+  else if (type == "nuisance")
+    fitted(object$nuisanceFit, ...)
+  else if (type == "predictor")
+    fitted(object$predictorFit, ...)
+}
+
+vcov.venus <- function(object, type = "main", ...) {
+  type <- match.arg(type, choices = c("nuisance", "predictor", "main"))
+  if (type == "main")
+    vcov(object$mainFit, ...)
+  else if (type == "nuisance")
+    vcov(object$nuisanceFit, ...)
+  else if (type == "predictor")
+    vcov(object$predictorFit, ...)
+}

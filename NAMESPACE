@@ -1,6 +1,15 @@
 exportPattern("^[[:alpha:]]+")
 import("earth")
 importFrom("graphics", "plot", "par")
-importFrom("stats", "lm", "model.matrix", "residuals", "terms")
+importFrom("stats", "lm", "model.matrix", "residuals", "terms", "coef", "effects", 
+           "fitted", "vcov")
+
 S3method("print", "venus")
+S3method("print", "summary.venus")
 S3method("plot", "venus")
+S3method("summary", "venus")
+S3method("residuals", "venus")
+S3method("coef", "venus")
+S3method("effects", "venus")
+S3method("fitted", "venus")
+S3method("vcov", "venus")

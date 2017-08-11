@@ -2,6 +2,13 @@
 \alias{venus}
 \alias{plot.venus}
 \alias{print.venus}
+\alias{summary.venus}
+\alias{coef.venus}
+\alias{effects.venus}
+\alias{fitted.venus}
+\alias{print.summary.venus}
+\alias{residuals.venus}
+\alias{vcov.venus}
 \title{
 Do a two-stage multivariate adaptive regression splines (MARS) fit.
 }
@@ -14,8 +21,13 @@ and multivariate adaptive regression splines.
 venus(formula, nuisance = NULL, data = NULL,
       method = c("earth", "lm"),
       nuisanceArgs = NULL, mainArgs = NULL)
-\method{plot}{venus}(x, ...)
-\method{print}{venus}(x, ...)
+\method{plot}{venus}(x, types = c("nuisance", "main"), ...)
+\method{print}{venus}(x, types = c("nuisance", "main"), ...)
+\method{summary}{venus}(object, ...)
+\method{coef}{venus}(object, type = "main", ...)
+\method{effects}{venus}(object, type = "main", ...)
+\method{fitted}{venus}(object, type = "main", ...)
+\method{print}{summary.venus}(x, types = c("nuisance", "main"), ...)
 }
 \arguments{
   \item{formula}{
@@ -37,7 +49,12 @@ A list of additional arguments to pass to the nuisance fit.
   \item{mainArgs}{
 A list of additional arguments to pass to the main fit.
 }
-  \item{x, ...}{ Parameters for print or plot methods.}
+  \item{x, object}{ Object for S3 methods.}
+  \item{type, types}{ Which part of the \code{"venus"}
+  object should be used?  \code{type} allows one of
+  \code{c("main", "nuisance", "predictor")}, \code{types}
+  allows more than one from the same list.}
+  \item{...}{Additional parameters to pass to component methods.}
 }
 \details{
 We use the \code{\link{earth}} function from the package
@@ -61,11 +78,17 @@ residuals in the main predictors using \code{method[2]}
 
 }
 \value{
-A list with S3 class \code{"venus"} containing two elements:
+\code{venus} returns a list with S3 class \code{"venus"} containing three elements:
 \item{nuisanceFit}{The first stage fit}
 \item{mainFit}{The second stage fit}
+\item{predictorFit}{The linear fit to partial the nuisance
+variables out of the predictors in the main fit}
 
-Methods to print and plot these objects are defined.
+The common methods for linear models are defined for these 
+objects; each has a \code{type} or \code{types} argument to
+select which of the three components is/are used in the call.
+For example, \code{coef(venusObject, type = "nuisance")} would extract the
+coefficients from the nuisance fit.
 }
 \author{
 Duncan Murdoch and David Armstrong
