@@ -1,7 +1,7 @@
 Package: venus
 Type: Package
 Title: Apply Earth Model to Nuisance Variables
-Version: 0.1.1
+Version: 0.1.2
 Author: Duncan Murdoch and David Armstrong
 Maintainer: Duncan Murdoch <murdoch.duncan@gmail.com>
 Description: To detect the effect of a particular variable,
