@@ -60,10 +60,7 @@
     mainModelmatrix <- residuals(predictorFit)
 
     # Now fit the residuals of y to the residuals of the predictors
-    if (method[2] == "lm")
-      mainFormula <- yResids ~ mainModelmatrix - 1
-    else
-      mainFormula <- yResids ~ mainModelmatrix
+    mainFormula <- yResids ~ mainModelmatrix 
     mainFit <- do.call(method[2], c(mainFormula, mainArgs))
     structure(list(mainFit = mainFit, nuisanceFit = nuisanceFit, predictorFit = predictorFit), class = "venus")
   }
