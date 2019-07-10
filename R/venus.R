@@ -1,5 +1,5 @@
-venus <- function(formula, nuisance = NULL, data = NULL,
-                  method = c("earth", "lm"), nuisanceArgs = NULL, mainArgs = NULL) {
+ venus <- function(formula, nuisance = NULL, data = NULL,
+                  method = c("earth", "lm"), nuisanceArgs = NULL, mainArgs = NULL, svd.thresh=1) {
   if (is.null(nuisance)) do.call(earth, c(formula = formula, mainArgs))
   else {
     stopifnot(inherits(nuisance, "formula"),
@@ -26,14 +26,37 @@ venus <- function(formula, nuisance = NULL, data = NULL,
     yResids <- residuals(nuisanceFit)
     nuisanceModelmatrix <- model.matrix(nuisanceFit)
     nuisanceIntercept <- attr(terms(nuisance, data = data), "intercept") > 0
-
+    ctrlMat <- nuisanceModelmatrix
+    avform <- all.vars(formula)[-1]
+    Xfits <- vector(mode="list", length=length(avform))
+    for(j in 1:length(avform)){
+      f <- update(nuisance, as.formula(paste0(avform[j], "~ .")))
+      nxCall <- quote(earth(formula = f, data = data))
+      nm <- names(nuisanceArgs)
+      for (i in seq_along(nuisanceArgs)) {
+        if (!is.null(nm) && !is.na(nm[i]) && nchar(nm[i]))
+          nxCall[[nm[i]]] <- nuisanceArgs[[i]]
+        else
+          nxCall <- c(nxCall, pairlist(nuisanceArgs[[i]]))
+      }
+      Xfits[[j]] <- eval(nxCall)
+     ndiff <- setdiff(colnames(model.matrix(Xfits[[j]])), colnames(ctrlMat))
+     ctrlMat <- cbind(ctrlMat, model.matrix(Xfits[[j]])[, ndiff])
+    }
     # Use the same linear model to correct the predictor variables
     mainModelmatrix <- model.matrix(formula, data = data)
     mainIntercept <- attr(terms(formula, data = data), "intercept") > 0
     if (nuisanceIntercept && mainIntercept)
       mainModelmatrix <- mainModelmatrix[, -1, drop = FALSE]
-
-    predictorFit <- lm(mainModelmatrix ~ nuisanceModelmatrix)
+    novars <- apply(ctrlMat, 1, sd)
+    if(any(novars == 0)){
+      ctrlMat <- ctrlMat[,-which(novars == 0)]
+    }
+    scm <- svd(ctrlMat)
+    scm.pct <- cumsum(scm$d/sum(scm$d))
+    scm.cut <- min(which(scm.pct >= svd.thresh))
+    sMat <- scm$u[,1:scm.cut, drop=FALSE] %*% diag(scm$d[1:scm.cut])[,,drop=FALSE]
+    predictorFit <- lm(mainModelmatrix ~ sMat)
     mainModelmatrix <- residuals(predictorFit)
 
     # Now fit the residuals of y to the residuals of the predictors

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="author" content="Duncan Murdoch and David Armstrong" />
+
+<meta name="date" content="2019-07-09" />
+
+<title>Adaptive MARS</title>
+
+
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#header {
+text-align: center;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Adaptive MARS</h1>
+<h4 class="author">Duncan Murdoch and David Armstrong</h4>
+<h4 class="date">2019-07-09</h4>
+
+
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>Despite recent advances in semi- and non-parametric techniques, most quantitative social scientists are still using regression models to substantiate their theoretical claims. In these models, there are generally two types of explanatory variables - those that are theoretically important and the subject of hypothesis testing (let’s call these <span class="math inline">\(X\)</span>) and those that are controls (let’s call these <span class="math inline">\(Z\)</span>). As any regression/research design text (e.g., [cite]) tells us, the control variables are meant to capture all alternative explanations of the dependent variable. One question that almost always remains unanswered is whether we are using the appropriate functional forms for these control variables. We propose a method that allows users to be confident that the control variables have the optimal relationship with both <span class="math inline">\(y\)</span> and <span class="math inline">\(X\)</span>, without making functional form assumptions and without interfering with inference on the variables of interest.</p>
+<p>The importance of these relationships cannot be overstated. Often control variables are considered to be “less important” than other more theoretically interesting variables and as such are often not treated with similar care in their specification. We argue that there are several problems that can arise from this. Most prominently are:</p>
+<ol style="list-style-type: decimal">
+<li>If the relationship between the control variables (<span class="math inline">\(Z\)</span>) and <span class="math inline">\(y\)</span> is wrong, then there is extra variance in <span class="math inline">\(y\)</span> left to be explained by <span class="math inline">\(X\)</span>. This means that we are likely overstating the effects of <span class="math inline">\(X\)</span> on <span class="math inline">\(y\)</span>. This is the classic omitted variable bias finding.<br />
+</li>
+<li>Less well-known is a similar problem where the relationship between <span class="math inline">\(X\)</span> and <span class="math inline">\(Z\)</span> cannot be appropriately estimated with the design matrix for the regression of <span class="math inline">\(y\)</span> on <span class="math inline">\((X,Z)\)</span>. This would be the case if, for instance <span class="math inline">\(z_{1}\)</span> had a linear relationship with <span class="math inline">\(y\)</span> and a quadratic relationship with <span class="math inline">\(x_{1}\)</span>. A conventional model would not remove enough of the variability in <span class="math inline">\(x_{1}\)</span>, leaving more of its variance to explain variance in <span class="math inline">\(y\)</span>, thus likely inducing some bias.</li>
+</ol>
+<p>The first problem above can be easily handled by careful model specification of <span class="math inline">\(y\)</span> on <span class="math inline">\((X,Z)\)</span>. The solution to the second problem is a bit less clear.</p>
+<p>We propose a solution based on Multivariate Adaptive Regression Splines (MARS) [cite]. The general idea is that we can use a flexible model to identify the appropriate design matrix for the regression of <span class="math inline">\(y\)</span> on <span class="math inline">\(Z\)</span>, call this <span class="math inline">\(m(Z|y)\)</span>. We can also generate the same result for the relationship between <span class="math inline">\(X\)</span> and <span class="math inline">\(Z\)</span>, generating <span class="math inline">\(m(Z|X)\)</span>. We can combine these two design matrices <span class="math inline">\((m(Z|y),m(Z|X))\)</span> and use those to residualize both <span class="math inline">\(y\)</span> and <span class="math inline">\(X\)</span>, leaving <span class="math inline">\(e^{(y)}\)</span> and <span class="math inline">\(e^{(X)}\)</span>. By regressing the former on the latter, we can get clean estimates of the effect of <span class="math inline">\(X\)</span> on <span class="math inline">\(y\)</span> controlling for <span class="math inline">\(Z\)</span>. We show through simulation that this estimator is unbiased and consistent while producing confidence intervals with approximately correct coverage in a wide range of circumstances.</p>
+</div>
+<div id="the-model" class="section level2">
+<h2>The Model</h2>
+<p>The model we propose is based on the Multivariate Adaptive Regression Splines (MARS™). This is a model that uses piecewise linear “hinge functions” to model arbitrary non-linearity.</p>
+<p><span class="math display">\[
+\begin{aligned}
+(x-t)_{+} &amp;= \begin{cases}
+  x-t &amp; \text{ if } x &gt; t\\
+  0   &amp;   \text{ otherwise.}
+\end{cases}
+\end{aligned}
+\]</span></p>
+<p><span class="math display">\[
+\begin{aligned}
+(t-x)_{+} &amp;= \begin{cases}
+  t-x &amp; \text{ if } x &lt; t\\
+  0   &amp;   \text{ otherwise.}
+\end{cases}
+\end{aligned}
+\]</span></p>
+</div>
+
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

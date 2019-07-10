@@ -54,6 +54,7 @@ A list of additional arguments to pass to the main fit.
   object should be used?  \code{type} allows one of
   \code{c("main", "nuisance", "predictor")}, \code{types}
   allows more than one from the same list.}
+  \item{svd.thresh}{Threshold on the amount of variance captured in the singular value decomposition of the control variable matrix. }
   \item{...}{Additional parameters to pass to component methods.}
 }
 \details{
