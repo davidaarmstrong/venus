@@ -1,5 +1,5 @@
  venus <- function(formula, nuisance = NULL, data = NULL,
-                  method = c("earth", "lm"), nuisanceArgs = NULL, mainArgs = NULL, svd.thresh=1) {
+                  method = c("earth", "lm"), nuisanceArgs = NULL, mainArgs = NULL, svd.thresh=.99) {
   if (is.null(nuisance)) do.call(earth, c(formula = formula, mainArgs))
   else {
     stopifnot(inherits(nuisance, "formula"),
