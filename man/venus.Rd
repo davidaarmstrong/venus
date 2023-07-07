@@ -20,7 +20,8 @@ and multivariate adaptive regression splines.
 \usage{
 venus(formula, nuisance = NULL, data = NULL,
       method = c("earth", "lm"),
-      nuisanceArgs = NULL, mainArgs = NULL)
+      nuisanceArgs = NULL, mainArgs = NULL, 
+      svd.thresh=.99, ps_method = c("po", "ds"), ...)
 \method{plot}{venus}(x, types = c("nuisance", "main"), ...)
 \method{print}{venus}(x, types = c("nuisance", "main"), ...)
 \method{summary}{venus}(object, ...)
@@ -55,6 +56,7 @@ A list of additional arguments to pass to the main fit.
   \code{c("main", "nuisance", "predictor")}, \code{types}
   allows more than one from the same list.}
   \item{svd.thresh}{Threshold on the amount of variance captured in the singular value decomposition of the control variable matrix. }
+  \item{ps_method}{Method for controlling for nuisance variables can be one of \code{"po"} for partialling out or \code{"ds"} for double selection.}
   \item{...}{Additional parameters to pass to component methods.}
 }
 \details{
