@@ -1,11 +1,10 @@
  venus <- function(formula, 
                    nuisance = NULL, 
                    data = NULL,
-                   method = c("earth", "lm"), 
+                   method = c("earth", "lm", "earth:::earth.formula", "gam", "gamlss"), 
                    nuisanceArgs = NULL, 
                    mainArgs = NULL, 
-                   svd.thresh=.99, 
-                   ps_method = c("po", "ds"), 
+                   svd.thresh=.99,
                    ...) {
   if (is.null(nuisance)) do.call(earth, c(formula = formula, mainArgs))
   else {
@@ -17,7 +16,6 @@
               length(method) == 2)
 
     method <- match.arg(method, several.ok = TRUE)
-
     # Do the fit of the nuisance parameters
     nuisanceCall <- quote(earth(formula = nuisance, data = data))
     if (method[1] == "lm")
@@ -34,7 +32,14 @@
     nuisanceModelmatrix <- model.matrix(nuisanceFit)
     nuisanceIntercept <- attr(terms(nuisance, data = data), "intercept") > 0
     ctrlMat <- nuisanceModelmatrix
-    avform <- all.vars(formula)[-1]
+    xmat <- model.matrix(formula, data=data)[,-1, drop=FALSE]
+    colnames(xmat) <- gsub(":", ".", colnames(xmat))
+    xmat <- as.data.frame(xmat)
+    addv <- setdiff(names(xmat), names(data))
+    if(length(addv) > 0){
+      data <- cbind(data, xmat[addv])
+    }
+    avform <- names(xmat)
     Xfits <- vector(mode="list", length=length(avform))
     for(j in 1:length(avform)){
       f <- update(nuisance, as.formula(paste0(avform[j], "~ .")))
@@ -59,37 +64,30 @@
     if(any(novars == 0)){
       ctrlMat <- ctrlMat[,-which(novars == 0)]
     }
-    scm <- svd(ctrlMat)
-    scm.pct <- cumsum(scm$d/sum(scm$d))
+    s <- scale(ctrlMat[,-1])
+    p <- princomp(s)
+    scm.pct <- cumsum(p$sdev^2)/length(p$sdev)
     scm.cut <- min(which(scm.pct >= svd.thresh))
-    sMat <- scm$u[,1:scm.cut, drop=FALSE] %*% diag(scm$d[1:scm.cut])[,,drop=FALSE]
+    sMat <- p$scores[, 1:scm.cut, drop=FALSE]
     mainCall <- list()
     mnrg <- names(mainArgs)
     for (i in seq_along(mainArgs)) {
       if (!is.null(mnrg) && !is.na(mnrg[i]) && nchar(mnrg[i])) 
-        mainCall[[nm[i]]] <- mainArgs[[i]]
+        mainCall[[mnrg[i]]] <- mainArgs[[i]]
       else mainCall <- c(mainCall, pairlist(mainArgs[[i]]))
     }
-    if(psm == "po"){
-      predictorFit <- lm(mainModelmatrix ~ sMat)
-      mainModelmatrix <- residuals(predictorFit)
-      mainFormula <- yResids ~ mainModelmatrix
-      mainCall$formula <- mainFormula
-      mainFit <- do.call(method[2], mainCall)
-      res <- structure(list(mainFit = mainFit, nuisanceFit = nuisanceFit, 
-                            predictorFit = predictorFit), class = "venus")
-    }
-    if(psm == "ds"){
-      maindf <- get_all_vars(formula, data=data)
-      sMat <- as.data.frame(sMat)
-      maindf <- cbind(maindf, sMat)
-      mainFormula <- reformulate(names(maindf)[-1], 
-                                 names(maindf)[1])
-      mainCall$formula <- mainFormula
-      mainCall$data <- maindf
-      mainFit <- do.call(method[2], mainCall)
-      res <- structure(list(mainFit = mainFit, nuisanceFit = nuisanceFit), class = "venus")
-    }
+    dv <- unformulate(formula)$response
+    maindf <- cbind(y=model.response(model.frame(formula, data=data)))
+    maindf <- cbind(maindf, xmat)
+    sMat <- as.data.frame(sMat)
+    maindf <- cbind(maindf, sMat)
+    names(maindf)[1] <- dv
+    f <- unformulate(formula)
+    mainFormula <- reformulate(c(f$termlabels, names(sMat)), response=f$response)
+    mainCall$formula <- mainFormula
+    mainCall$data <- maindf
+    mainFit <- do.call(eval(parse(text=method[2])), mainCall)
+    res <- structure(list(mainFit = mainFit, nuisanceFit = nuisanceFit, p=p, data=maindf), class = "venus")
   }
    res 
  }
@@ -203,4 +201,24 @@ vcov.venus <- function(object, type = "main", ...) {
     vcov(object$nuisanceFit, ...)
   else if (type == "predictor" & "predictorFit" %in% names(object))
     vcov(object$predictorFit, ...)
+}
+
+unformulate <- function(form, keep_env=FALSE){
+  rhs <- attr(terms(form), "term.labels")
+  vn <- all.vars(form)
+  l <- as.list(form)
+  if(length(l) == 2){
+    lhs <- NULL
+  }
+  if(length(l) == 3){
+    lhs <- as.character(l[[2]])
+  }
+  if(!(length(l) %in% 2:3)){
+    stop("formula must transform into a two- or three-element list\n")
+  }
+  res <- list(termlabels = rhs, response = lhs, vars = vn)
+  if(keep_env){
+    res$env <- environment(form)
+  }
+  res
 }

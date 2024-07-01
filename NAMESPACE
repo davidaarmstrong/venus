@@ -1,4 +1,12 @@
-exportPattern("^[[:alpha:]]+")
+export(venus)
+export(plot.venus)
+export(print.venus)
+export(summary.venus)
+export(coef.venus)
+export(vcov.venus)
+export(effects.venus)
+export(fitted.venus)
+export(print.venus)
 import("earth")
 importFrom("graphics", "plot", "par")
 importFrom("stats", "lm", "model.matrix", "residuals", "terms", "coef", "effects", 

@@ -26,6 +26,7 @@ venus(formula, nuisance = NULL, data = NULL,
 \method{print}{venus}(x, types = c("nuisance", "main"), ...)
 \method{summary}{venus}(object, ...)
 \method{coef}{venus}(object, type = "main", ...)
+\method{vcov}{venus}(object, type = "main", ...)
 \method{effects}{venus}(object, type = "main", ...)
 \method{fitted}{venus}(object, type = "main", ...)
 \method{print}{summary.venus}(x, types = c("nuisance", "main"), ...)
@@ -56,7 +57,6 @@ A list of additional arguments to pass to the main fit.
   \code{c("main", "nuisance", "predictor")}, \code{types}
   allows more than one from the same list.}
   \item{svd.thresh}{Threshold on the amount of variance captured in the singular value decomposition of the control variable matrix. }
-  \item{ps_method}{Method for controlling for nuisance variables can be one of \code{"po"} for partialling out or \code{"ds"} for double selection.}
   \item{...}{Additional parameters to pass to component methods.}
 }
 \details{
